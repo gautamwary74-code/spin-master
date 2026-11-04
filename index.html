@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spin Master</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #101326;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding: 25px 15px;
+}
+h1 { color: #ffd54a; font-size: 30px; }
+.coins {
+  background: #222844;
+  display: inline-block;
+  padding: 13px 25px;
+  border-radius: 25px;
+  color: #ffd54a;
+  font-size: 19px;
+}
+.wheel-box {
+  position: relative;
+  width: min(310px, 85vw);
+  margin: 35px auto 25px;
+}
+canvas { width: 100%; height: auto; }
+.pointer {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 35px;
+  color: white;
+  z-index: 2;
+}
+button {
+  background: #ffd54a;
+  color: #17172a;
+  border: 0;
+  border-radius: 30px;
+  padding: 15px 45px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+button:disabled { opacity: .5; }
+#result {
+  font-size: 22px;
+  color: #ffd54a;
+  margin: 20px;
+}
+.history {
+  background: #222844;
+  border-radius: 15px;
+  padding: 15px;
+  margin: 25px auto;
+  max-width: 350px;
+}
+</style>
+</head>
+<body>
+
+<h1>🎡 SPIN MASTER</h1>
+<div class="coins">🪙 Coins: <span id="coins">100</span></div>
+
+<div class="wheel-box">
+  <div class="pointer">▼</div>
+  <canvas id="wheel" width="600" height="600"></canvas>
+</div>
+
+<button id="spin" onclick="spin()">SPIN NOW</button>
+<div id="result">Ready to Spin?</div>
+
+<div class="history">
+  <h2>📜 Spin History</h2>
+  <div id="history">No spins yet</div>
+</div>
+
+<script>
+const canvas = document.getElementById("wheel");
+const ctx = canvas.getContext("2d");
+const values = ["10","20","50","100","5","30","15","25"];
+const colors = ["#ff5252","#448aff","#ffca28","#ab47bc",
+                "#26a69a","#ff7043","#5c6bc0","#ec407a"];
+const arc = Math.PI * 2 / values.length;
+let angle = 0;
+let coins = 100;
+let busy = false;
+
+function draw() {
+  ctx.clearRect(0,0,600,600);
+  values.forEach((v,i) => {
+    const start = angle + i*arc;
+    ctx.beginPath();
+    ctx.moveTo(300,300);
+    ctx.arc(300,300,285,start,start+arc);
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(300,300);
+    ctx.rotate(start+arc/2);
+    ctx.fillStyle = "white";
+    ctx.font = "bold 40px Arial";
+    ctx.textAlign = "right";
+    ctx.fillText(v,255,14);
+    ctx.restore();
+  });
+  ctx.beginPath();
+  ctx.arc(300,300,48,0,Math.PI*2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.fillStyle = "#17172a";
+  ctx.font = "bold 23px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("SPIN",300,308);
+}
+draw();
+
+function spin() {
+  if(busy) return;
+  busy = true;
+  document.getElementById("spin").disabled = true;
+
+  const extra = Math.random()*Math.PI*2;
+  const start = angle;
+  const target = start + Math.PI*2*6 + extra;
+  const duration = 4000;
+  const begin = performance.now();
+
+  function animate(now) {
+    const t = Math.min((now-begin)/duration,1);
+    const ease = 1-Math.pow(1-t,4);
+    angle = start+(target-start)*ease;
+    draw();
+
+    if(t<1) {
+      requestAnimationFrame(animate);
+    } else {
+      const normalized = ((-angle % (Math.PI*2)) + Math.PI*2)%(Math.PI*2);
+      const index = Math.floor(normalized/arc);
+      const prize = values[index];
+      coins += Number(prize);
+      document.getElementById("coins").textContent = coins;
+      document.getElementById("result").textContent =
+        "🎉 You got "+prize+" virtual coins!";
+
+      const h = document.getElementById("history");
+      if(h.textContent==="No spins yet") h.textContent="";
+      h.innerHTML = "<p>🎯 "+prize+" coins</p>"+h.innerHTML;
+      busy = false;
+      document.getElementById("spin").disabled = false;
+    }
+  }
+  requestAnimationFrame(animate);
+}
+</script>
+</body>
+  </html>
+  
